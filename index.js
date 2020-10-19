@@ -96,7 +96,7 @@ app.post("/user/create", (req, res) => {
 
     const isNameTaken = users.filter(user => user.name === userData.name);
     if (isNameTaken.length !== 0) {
-        return res.send("this user name is already taken");
+        return res.send("this user name is already taken!");
     }
 
     if (userData.name && userData.location && userData.answers && userData.answers.length === 5 && Object.keys(userData).length === 3) {
