@@ -1,8 +1,11 @@
 const express = require("express");
 const bodyParser = require("body-parser");
 const fs = require("fs");
+const cors = require("cors");
+const utility = require('./utility-functions');
 
 const app = express();
+app.use(cors());
 app.use(bodyParser.json());
 const port = process.env.PORT || 7000;
 
@@ -26,6 +29,7 @@ app.get("/users", (req, res) => {
         users = JSON.parse(readFromFile("users.json"));
         res.send(users);
     } catch (e) {
+        res.send("No users to display");
         return [];
     }
 })
@@ -37,7 +41,6 @@ app.get("/user/:id", (req, res) => {
     try {
         users = JSON.parse(readFromFile("users.json"));
         user = users.filter(user => Number(user.id) === Number(req.params.id));
-
         if (user.length !== 0) {
             res.send(user[0]);
         }
@@ -50,24 +53,12 @@ app.get("/user/:id", (req, res) => {
 app.put("/user/:id", (req, res) => {
     users = JSON.parse(readFromFile("users.json"));
     const userData = req.body;
-    if (Number(userData.id) === Number(req.params.id)) {
-        const userUpdatedAnswers = userData.answers;
-        console.log(userUpdatedAnswers);
-        for (let i = 0; i < users.length; i++) {
-            if (Number(users[i].id) === Number(req.params.id)) {
-                users[i].answers = userUpdatedAnswers;
+    const paramsId = req.params.id;
+    
+    if (Number(userData.id) === Number(paramsId)) {
+        utility.searchForUser(userData, users, paramsId);
 
-                const user = JSON.parse(readFromFile(`users/${users[i].name}.json`)); //updating the specific user file as well
-
-                user.answers = userUpdatedAnswers;
-                console.log(`user's updated answers: ${user.answers}`);
-                const userBackToJson = JSON.stringify(user);
-                fs.writeFileSync(`users/${users[i].name}.json`, userBackToJson);
-                break;
-            }
-        }
-        const backtojson = JSON.stringify(users);
-        fs.writeFileSync("users.json", backtojson);
+        writeToFile("users.json", users);
         res.status(200);
         res.send(users);
     }
@@ -81,7 +72,6 @@ app.get("/userbyname/:name", (req, res) => {
     let user;
     try {
         console.log(req.params.name);
-
         user = JSON.parse(readFromFile(`users/${req.params.name}.json`));
         res.send(user);
 
@@ -94,8 +84,15 @@ app.get("/userbyname/:name", (req, res) => {
 app.post("/user/create", (req, res) => {
     const userData = req.body;
 
-    users = JSON.parse(readFromFile("users.json"));
-    nextIndex = users[users.length - 1].id + 1; //next available index
+    users = readFromFile("users.json");
+    if (users) {
+        users = JSON.parse(readFromFile("users.json"));
+        nextIndex = users[users.length - 1].id + 1; //next available index
+    }
+    else {
+        users = [];
+        nextIndex = 0;
+    }
 
     const isNameTaken = users.filter(user => user.name === userData.name);
     if (isNameTaken.length !== 0) {
@@ -111,8 +108,7 @@ app.post("/user/create", (req, res) => {
         }
         users.push(newUser);
 
-        const backtojson = JSON.stringify(users);
-        fs.writeFileSync("users.json", backtojson);
+        writeToFile("users.json", users);
         res.status(200);
         res.send(users);
 
@@ -130,8 +126,6 @@ app.post("/user/create", (req, res) => {
 app.post("/:username/answerquiz/:friendsname", (req, res) => {
     let currentUser;
     let friendData = req.body;
-
-    questions = JSON.parse(readFromFile("questions-w-answers.json"));
     users = JSON.parse(readFromFile("users.json"));
    
     //check if username exists, if it does, open/create `friends answer` file
@@ -162,8 +156,9 @@ app.post("/:username/answerquiz/:friendsname", (req, res) => {
         }
         friendsAnswers.push(friendsdetails); //push current friend answers to user's friend's file
 
-        const backtojson = JSON.stringify(friendsAnswers);
-        fs.writeFileSync(`users-friends-answers/${currentUser.name}-friends-answers.json`, backtojson);
+        writeToFile(`users-friends-answers/${currentUser.name}-friends-answers.json`, friendsAnswers);
+        // const backtojson = JSON.stringify(friendsAnswers);
+        // fs.writeFileSync(`users-friends-answers/${currentUser.name}-friends-answers.json`, backtojson);
         res.status(200);
         res.send(friendsAnswers);
     }
@@ -199,6 +194,12 @@ const readFromFile = (filename) => {
     const dataBuffer = fs.readFileSync(filename);
     const dataJSON = dataBuffer.toString();
     return dataJSON;
+}
+
+const writeToFile = (filename,contentToWrite) => {
+    const userBackToJson = JSON.stringify(contentToWrite);
+    fs.writeFileSync(filename, userBackToJson);
+    return userBackToJson;
 }
 
 
