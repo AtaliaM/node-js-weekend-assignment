@@ -121,18 +121,21 @@ app.post("/user/create", (req, res) => {
 
 //post request with a user's friend guesses for answers
 app.post("/:username/answerquiz/:friendsname", (req, res) => {
-    let currentUser;
+    // let currentUser;
     let friendData = req.body;
+    let userName = req.params.username;
     users = JSON.parse(readFromFile("users.json"));
 
+    let currentUser = utility.checkIfUserExists(users,userName);
     //check if username exists, if it does, open/create `friends answer` file
-    for (let i = 0; i < users.length; i++) {
-        if (req.params.username === users[i].name) {
-            currentUser = users[i];
-            console.log("found user!");
-            break;
-        }
-    }////
+    // for (let i = 0; i < users.length; i++) {
+    //     if (req.params.username === users[i].name) {
+    //         currentUser = users[i];
+    //         console.log("found user!");
+    //         break;
+    //     }
+    // }////
+
     if (currentUser === undefined) {
         return res.send("there isn't a user with that name");
     }

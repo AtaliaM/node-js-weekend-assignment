@@ -22,6 +22,15 @@ const updateUserAnswers = (userUpdatedAnswers,users,paramsId) => {
     }
 }
 
+const checkIfUserExists = (users, userName) => {
+    //check if username exists, if it does, open/create `friends answer` file
+    for (let i = 0; i < users.length; i++) {
+        if (userName === users[i].name) {
+            return users[i];
+        }
+    }
+}
+
 
 const readFromFile = (filename) => {
     const dataBuffer = fs.readFileSync(filename);
@@ -32,5 +41,6 @@ const readFromFile = (filename) => {
 
 module.exports = {
     searchForUser,
+    checkIfUserExists,
 
 }
