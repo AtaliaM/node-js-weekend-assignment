@@ -44,6 +44,9 @@ app.get("/user/:id", (req, res) => {
         if (user.length !== 0) {
             res.send(user[0]);
         }
+        else {
+            res.send("no user with this id");
+        }
     } catch (e) {
         res.send("no user with this id");
     }
