@@ -1,22 +1,22 @@
 [
     {
-        "q1" : "what is my favorite color?",
-        "a1" : ["blue", "green", "pink", "purple"]
+        "q" : "what is my favorite color?",
+        "a" : ["blue", "green", "pink", "purple"]
     },
     {
-        "q2" : "what is my favorite food?",
-        "a2" : ["pizza", "chocolate", "humburger", "sushi"]
+        "q" : "what is my favorite food?",
+        "a" : ["pizza", "chocolate", "humburger", "sushi"]
     },
     {
-        "q3" : "what is my favorite sports?",
-        "a3" : ["soccer", "basketball", "tennis", "judo"]
+        "q" : "what is my favorite sports?",
+        "a" : ["soccer", "basketball", "tennis", "judo"]
     },
     {
-        "q4" : "what is my favorite country?",
-        "a4" : ["japan", "england", "israel", "spain"]
+        "q" : "what is my favorite country?",
+        "a" : ["japan", "england", "israel", "spain"]
     },
     {
-        "q5" : "what is my favorite animal?",
-        "a5" : ["cat", "dog", "elephant", "tiger"]
+        "q" : "what is my favorite animal?",
+        "a" : ["cat", "dog", "elephant", "tiger"]
     }
 ]
