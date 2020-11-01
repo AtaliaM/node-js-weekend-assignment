@@ -65,11 +65,11 @@ app.put("/user/:id", (req, res) => {
 })
 
 //get user from user file
-app.get("/userbyname/:name", (req, res) => {
+app.get("/userbyname/:name/:id", (req, res) => {
     let user;
     try {
         console.log(req.params.name);
-        user = JSON.parse(readFromFile(`users/${req.params.name}.json`));
+        user = JSON.parse(readFromFile(`users/${req.params.name}-${req.params.id}.json`));
         res.send(user);
 
     } catch (e) {
@@ -91,10 +91,10 @@ app.post("/user/create", (req, res) => {
         nextIndex = 0;
     }
 
-    const isNameTaken = users.filter(user => user.name === userData.name);
-    if (isNameTaken.length !== 0) {
-        return res.send("this user name is already taken!");
-    }
+    // const isNameTaken = users.filter(user => user.name === userData.name);
+    // if (isNameTaken.length !== 0) {
+    //     return res.send("this user name is already taken!");
+    // }
 
     if (userData.name && userData.location && userData.answers && userData.answers.length === 5 && Object.keys(userData).length === 3) {
         const newUser = {
@@ -107,58 +107,68 @@ app.post("/user/create", (req, res) => {
 
         writeToFile("users.json", users);
         res.status(200);
-        res.send(users);
+        res.send(newUser);
 
         const newUserJason = JSON.stringify(newUser);
-        fs.writeFileSync(`users/${userData.name}.json`, newUserJason); //creating new file to the new user
-        fs.writeFileSync(`users-friends-answers/${userData.name}-friends-answers.json`, ""); //creating new file for user's friends answers
+        fs.writeFileSync(`users/${userData.name}-${nextIndex}.json`, newUserJason); //creating new file to the new user
+        fs.writeFileSync(`users-friends-answers/${userData.name}-${nextIndex}-friends-answers.json`, ""); //creating new file for user's friends answers
     }
     else {
         res.send("error");
     }
 })
 
-
-//post request with a user's friend guesses for answers
-app.post("/:username/answerquiz/:friendsname", (req, res) => {
-    // let currentUser;
-    let friendData = req.body;
+//user's quiz link //
+app.get("/:username/:userid/answerquiz"), (req,res) => {
     let userName = req.params.username;
+    let userId = req.params.userid;
     users = JSON.parse(readFromFile("users.json"));
 
-    let currentUser = utility.checkIfUserExists(users,userName);
-    //check if username exists, if it does, open/create `friends answer` file
-    // for (let i = 0; i < users.length; i++) {
-    //     if (req.params.username === users[i].name) {
-    //         currentUser = users[i];
-    //         console.log("found user!");
-    //         break;
-    //     }
-    // }////
+    let currentUser = utility.checkIfUserExists(users,userName, userId);
 
     if (currentUser === undefined) {
         return res.send("there isn't a user with that name");
     }
 
-    let friendsAnswers = readFromFile(`users-friends-answers/${currentUser.name}-friends-answers.json`);
+    questions = JSON.parse(readFromFile("questions-w-answers.json"));
+    res.send(questions);
+}
+
+
+//post request with a user's friend guesses for answers
+app.post("/:username/:userid/answerquiz", (req, res) => { //!
+    let friendData = req.body;
+    let userName = req.params.username;
+    let userId = req.params.userid;
+    let friendIndex;
+    users = JSON.parse(readFromFile("users.json"));
+
+    let currentUser = utility.checkIfUserExists(users,userName, userId);
+
+    if (currentUser === undefined) {
+        return res.send("there isn't a user with that name");
+    }
+
+    let friendsAnswers = readFromFile(`users-friends-answers/${currentUser.name}-${currentUser.id}-friends-answers.json`);
     if (friendsAnswers) {
         friendsAnswers = JSON.parse(friendsAnswers);
+        friendIndex = friendsAnswers.length-1;
     }
     else {
         friendsAnswers = [];
+        friendIndex = 0;
     }
 
     if (friendData.name && friendData.location && friendData.answers && friendData.answers.length === 5 && Object.keys(friendData).length === 3) {
         const friendsdetails = {
             name: friendData.name,
+            id: friendIndex,
             location: friendData.location,
             answers: friendData.answers,
         }
         friendsAnswers.push(friendsdetails); //push current friend answers to user's friend's file
 
-        writeToFile(`users-friends-answers/${currentUser.name}-friends-answers.json`, friendsAnswers);
-        // const backtojson = JSON.stringify(friendsAnswers);
-        // fs.writeFileSync(`users-friends-answers/${currentUser.name}-friends-answers.json`, backtojson);
+        writeToFile(`users-friends-answers/${currentUser.name}-${currentUser.id}-friends-answers.json`, friendsAnswers);
         res.status(200);
         res.send(friendsAnswers);
     }
@@ -168,11 +178,11 @@ app.post("/:username/answerquiz/:friendsname", (req, res) => {
 })
 
 //get friend rank for specific user questions
-app.get("/:username/rank/:friendname", (req, res) => { //need to take care of friends with same name
+app.get("/:username/:userid/rank/:friendname", (req, res) => { //need to take care of friends with same name
     try {
         let rank = 0;
-        const friendsAnswers = JSON.parse(readFromFile(`users-friends-answers/${req.params.username}-friends-answers.json`));
-        const userAnswers = JSON.parse(readFromFile(`users/${req.params.username}.json`));
+        const friendsAnswers = JSON.parse(readFromFile(`users-friends-answers/${req.params.username}-${req.params.userid}-friends-answers.json`));
+        const userAnswers = JSON.parse(readFromFile(`users/${req.params.username}-${req.params.userid}.json`));
         const friend = friendsAnswers.filter(friend => friend.name === req.params.friendname);
         if (friend.length >= 1 && userAnswers) {
             console.log("found friend");
@@ -184,6 +194,38 @@ app.get("/:username/rank/:friendname", (req, res) => { //need to take care of fr
             res.send(`${friend[0].name}'s rank is: ${rank}`);
         }
         res.send(`no friend with name ${req.params.friendname} answered this quiz`);
+    } catch (e) {
+        res.send("error");
+    }
+})
+
+//get all friends rank's for specific user
+app.get("/:username/:userid/friendsrank", (req, res) => { 
+    try {
+        let rank = 0;
+        const friendsRank = [];
+        const friendsAnswers = JSON.parse(readFromFile(`users-friends-answers/${req.params.username}-${req.params.userid}-friends-answers.json`));
+        const userAnswers = JSON.parse(readFromFile(`users/${req.params.username}-${req.params.userid}.json`));
+
+        for (let i=0; i < friendsAnswers.length; i++) { //iterating over friends list
+            for (let j = 0; j < friendsAnswers[i].answers.length; j++) { //iterating over each friend's guesses
+                if (friendsAnswers[i].answers[j] === userAnswers.answers[j]) { // checking how many guesses are correct
+                    rank++;
+                }
+            }
+            const friend = {
+                name: friendsAnswers[i].name,
+                id: friendsAnswers[i].id,
+                rank: rank,
+            }
+            friendsRank.push(friend);
+            rank = 0;
+        }
+        console.log(friendsRank);
+        friendsRank.sort((a, b) => (a.rank > b.rank) ? -1 : 1);
+        res.send(friendsRank);
+
+        
     } catch (e) {
         res.send("error");
     }
